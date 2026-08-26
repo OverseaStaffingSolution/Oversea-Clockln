@@ -20,6 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GPSStatus } from '../components/ui/GPSStatus';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
+import { InstallButton } from '../components/ui/InstallButton';
 import { useGeolocation, GPSPosition, GPS_STATUS } from '../hooks/useGeolocation';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useAgentSchedule } from '../hooks/useAgentSchedule';
@@ -421,6 +422,8 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6 sm:space-y-8 pb-10 max-w-5xl mx-auto">
+      <InstallButton />
+      
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-[#FC9905] mb-2 tracking-tight">

@@ -1,9 +1,21 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { registerSW } from 'virtual:pwa-register';
 import App from './App.tsx';
 import './index.css';
 import './styles/theme.css';
+
+// Explicit Service Worker Registration (Only in Production to avoid Dev Server conflicts)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('✅ Service Worker enregistré avec succès', registration);
+      })
+      .catch(err => {
+        console.error('❌ Erreur Service Worker:', err);
+      });
+  });
+}
 
 // Fonction pour faire disparaître le splash screen avec une transition douce
 function hideSplashScreen() {
@@ -15,20 +27,6 @@ function hideSplashScreen() {
     }, 500);
   }
 }
-
-// Register PWA service worker with auto-update
-const updateSW = registerSW({
-  onNeedRefresh() {
-    console.log('[PWA] New content available, refreshing...');
-    updateSW(true);
-  },
-  onOfflineReady() {
-    console.log('[PWA] App ready to work offline.');
-  },
-  onRegisterError(error) {
-    console.warn('[PWA] Service worker registration error:', error);
-  },
-});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
