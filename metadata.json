@@ -1,0 +1,10 @@
+{
+  "name": "Oversea ClockIn",
+  "description": "Application PWA pour le système de pointage de call center.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

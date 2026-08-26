@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap');
+@import "tailwindcss";
+@import "./styles/theme.css";
+
+@theme {
+  --color-primary: #110195;
+  --color-secondary: #FC9905;
+  --color-bg-1: #0f0c29;
+  --color-bg-2: #302b63;
+  --color-bg-3: #24243e;
+  --color-section-bg: #1a1a3e;
+}
+
+@layer base {
+  html, body {
+    @apply m-0 p-0 text-gray-900 antialiased overflow-x-hidden;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(17, 1, 149, 0.05); /* very light primary */
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(17, 1, 149, 0.3);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(252, 153, 5, 0.5); /* secondary color on hover */
+  }
+}
