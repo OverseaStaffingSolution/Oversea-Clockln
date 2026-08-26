@@ -11,15 +11,7 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: [
-          'LOGO.png',
-          'favicon.png',
-          'favicon.svg',
-          'apple-touch-icon.png',
-          'site.webmanifest',
-          'icons/*.png',
-          'splash/*.png',
-        ],
+        includeAssets: ['LOGO.png'],
         manifest: {
           name: 'Oversea ClockIn',
           short_name: 'ClockIn',
@@ -32,34 +24,22 @@ export default defineConfig(() => {
           scope: '/',
           icons: [
             {
-              src: '/icons/icon-192.png',
+              src: '/LOGO.png',
               sizes: '192x192',
               type: 'image/png',
-              purpose: 'any',
+              purpose: 'any'
             },
             {
-              src: '/icons/icon-192-maskable.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'maskable',
-            },
-            {
-              src: '/icons/icon-512.png',
+              src: '/LOGO.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/icons/icon-512-maskable.png',
+              src: '/LOGO.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
-            },
-            {
-              src: '/icons/apple-touch-icon.png',
-              sizes: '180x180',
-              type: 'image/png',
-              purpose: 'any',
             },
           ],
         },
