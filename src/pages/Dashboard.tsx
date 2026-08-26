@@ -139,15 +139,12 @@ export function Dashboard() {
     }
   }, []);
 
-  // Fonction pour rafraîchir les données en contournant le cache
   const refreshData = useCallback(async () => {
     if (!effectiveAgentId) return;
     try {
-      // Vider le cache Supabase pour forcer un rechargement réseau
       if ('caches' in window) {
         await caches.delete('supabase-api-cache');
       }
-      // Supprimer aussi le cache local
       cacheService.remove(`today_pointage_${effectiveAgentId}`);
       cacheService.remove('call_center_site_info');
 
@@ -157,7 +154,7 @@ export function Dashboard() {
       const site = await getSiteInfo();
       setSiteInfo(site);
     } catch (err) {
-      console.error('Erreur refresh:', err);
+      console.error('Refresh error:', err);
       setFeedback({
         type: 'error',
         message: MESSAGES.ERROR.NETWORK
@@ -173,10 +170,9 @@ export function Dashboard() {
 
     try {
       setInitialLoading(true);
-      // On appelle refreshData pour partir sur des données propres
       await refreshData();
     } catch (err) {
-      console.error('Erreur chargement initial:', err);
+      console.error('Initial load error:', err);
       setFeedback({
         type: 'error',
         message: MESSAGES.ERROR.NETWORK
@@ -209,7 +205,7 @@ export function Dashboard() {
     if (!isOnline) {
       setFeedback({
         type: 'error',
-        message: 'Vous êtes actuellement hors-ligne. Le pointage requiert une connexion Internet active.'
+        message: 'You are currently offline. Clock in requires an active internet connection.'
       });
       return;
     }
@@ -219,7 +215,7 @@ export function Dashboard() {
     if (!effectiveAgentId) {
       setFeedback({
         type: 'error',
-        message: "Identifiant agent introuvable. Veuillez vous reconnecter."
+        message: 'Agent ID not found. Please sign in again.'
       });
       return;
     }
@@ -254,7 +250,7 @@ export function Dashboard() {
       setModalType('arrival');
       setShowModal(true);
     } catch (err: any) {
-      console.error('Erreur GPS handleClockIn:', err);
+      console.error('GPS error handleClockIn:', err);
       setFeedback({
         type: 'error',
         message: err.message || MESSAGES.ERROR.NETWORK
@@ -269,7 +265,7 @@ export function Dashboard() {
     if (!isOnline) {
       setFeedback({
         type: 'error',
-        message: 'Vous êtes actuellement hors-ligne. Le pointage requiert une connexion Internet active.'
+        message: 'You are currently offline. Clock out requires an active internet connection.'
       });
       return;
     }
@@ -279,7 +275,7 @@ export function Dashboard() {
     if (!effectiveAgentId) {
       setFeedback({
         type: 'error',
-        message: "Identifiant agent introuvable. Veuillez vous reconnecter."
+        message: 'Agent ID not found. Please sign in again.'
       });
       return;
     }
@@ -314,7 +310,7 @@ export function Dashboard() {
       setModalType('departure');
       setShowModal(true);
     } catch (err: any) {
-      console.error('Erreur GPS handleClockOut:', err);
+      console.error('GPS error handleClockOut:', err);
       setFeedback({
         type: 'error',
         message: err.message || MESSAGES.ERROR.NETWORK
@@ -353,7 +349,6 @@ export function Dashboard() {
           message: result.message || (modalType === 'arrival' ? MESSAGES.SUCCESS.CLOCK_IN_OK : MESSAGES.SUCCESS.CLOCK_OUT_OK)
         });
 
-        // Rafraîchir les données immédiatement pour mettre à jour l'interface
         await refreshData();
       } else {
         const errorMsg = result?.message || (modalType === 'arrival' ? MESSAGES.POINTAGE.HORS_ZONE : MESSAGES.POINTAGE.NO_IN);
@@ -363,7 +358,7 @@ export function Dashboard() {
         });
       }
     } catch (err: any) {
-      console.error('Erreur handleConfirm:', err);
+      console.error('Confirm error:', err);
       setFeedback({
         type: 'error',
         message: err.message || MESSAGES.ERROR.NETWORK
@@ -431,7 +426,7 @@ export function Dashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <div className="w-12 h-12 border-4 border-[#110195]/20 border-t-[#110195] rounded-full animate-spin"></div>
-        <p className="text-gray-600 font-medium text-sm">Chargement de votre journée...</p>
+        <p className="text-gray-600 font-medium text-sm">Loading your day...</p>
       </div>
     );
   }
@@ -443,10 +438,10 @@ export function Dashboard() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-[#FC9905] mb-2 tracking-tight">
-            Bonjour, {agent?.prenom || agent?.nom || user?.email?.split('@')[0] || 'Agent'} !
+            Hello, {agent?.prenom || agent?.nom || user?.email?.split('@')[0] || 'Agent'}!
           </h1>
           <p className="text-base sm:text-lg text-gray-700 font-light flex items-center gap-2">
-            <span>Connecté en tant que</span>
+            <span>Logged in as</span>
             <span className="inline-flex items-center gap-1.5 font-semibold text-gray-900 capitalize bg-white/60 px-2.5 py-0.5 rounded-lg border border-[#110195]/10">
               {agent?.role === 'manager' ? (
                 <>
@@ -496,12 +491,12 @@ export function Dashboard() {
               {liveDistance !== null && liveDistance <= targetRadius ? (
                 <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  Dans le rayon
+                  Within radius
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  Hors rayon
+                  Outside radius
                 </span>
               )}
             </span>
@@ -534,7 +529,7 @@ export function Dashboard() {
           <button
             onClick={() => setFeedback(null)}
             className="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-black/5 self-end sm:self-center transition-colors"
-            aria-label="Fermer"
+            aria-label="Close"
           >
             <X className="w-4 h-4" />
           </button>
@@ -547,9 +542,9 @@ export function Dashboard() {
             <WifiOff className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <p className="font-bold text-sm text-amber-950">Vous êtes hors-ligne</p>
+            <p className="font-bold text-sm text-amber-950">You are currently offline</p>
             <p className="text-xs text-amber-800/90 mt-0.5 leading-relaxed">
-              Le pointage nécessite une connexion Internet active pour authentifier et vérifier la position GPS. Veuillez vous reconnecter pour continuer.
+              Clocking in and out requires an active internet connection to authenticate and verify GPS location. Please reconnect to continue.
             </p>
           </div>
         </div>
@@ -572,22 +567,22 @@ export function Dashboard() {
           {!isOnline ? (
             <>
               <WifiOff className="w-6 h-6 text-gray-400" />
-              <span>Hors-ligne</span>
+              <span>Offline</span>
             </>
           ) : loading && isPointing === 'arrival' ? (
             <>
               <Loader2 className="w-6 h-6 animate-spin" />
-              <span>Enregistrement...</span>
+              <span>Saving...</span>
             </>
           ) : !canClockIn && (todayPointage?.clock_in_time || todayPointage?.heure_arrivee) ? (
             <>
               <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-              <span>Arrivée enregistrée</span>
+              <span>Clock In recorded</span>
             </>
           ) : (
             <>
               <LogIn className="w-6 h-6" />
-              <span>ARRIVÉE</span>
+              <span>Clock In</span>
             </>
           )}
         </button>
@@ -608,22 +603,22 @@ export function Dashboard() {
           {!isOnline ? (
             <>
               <WifiOff className="w-6 h-6 text-gray-400" />
-              <span>Hors-ligne</span>
+              <span>Offline</span>
             </>
           ) : loading && isPointing === 'departure' ? (
             <>
               <Loader2 className="w-6 h-6 animate-spin" />
-              <span>Enregistrement...</span>
+              <span>Saving...</span>
             </>
           ) : !canClockOut && (todayPointage?.clock_out_time || todayPointage?.heure_depart) ? (
             <>
               <CheckCircle2 className="w-6 h-6 text-gray-500" />
-              <span>Départ enregistré</span>
+              <span>Clock Out recorded</span>
             </>
           ) : (
             <>
               <LogOut className="w-6 h-6" />
-              <span>DÉPART</span>
+              <span>Clock Out</span>
             </>
           )}
         </button>
@@ -633,13 +628,13 @@ export function Dashboard() {
         <GlassCard className="!p-5 sm:!p-6 border border-[#110195]/10">
           <h3 className="text-base font-serif font-bold text-gray-900 mb-4 flex items-center gap-2.5">
             <Calendar className="w-5 h-5 text-[#110195]" />
-            <span>Aujourd'hui</span>
+            <span>Today</span>
           </h3>
           <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
             <div className="bg-[#110195]/5 p-2.5 sm:p-3 rounded-xl border border-[#110195]/10">
               <div className="flex items-center justify-center gap-1 text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider">
                 <LogIn className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-400 shrink-0" />
-                <span>Arrivée</span>
+                <span>Clock In</span>
               </div>
               <span className="block text-base sm:text-xl font-bold text-gray-900 mt-1 font-mono">
                 {todayPointage?.clock_in_time || todayPointage?.heure_arrivee
@@ -650,7 +645,7 @@ export function Dashboard() {
             <div className="bg-[#110195]/5 p-2.5 sm:p-3 rounded-xl border border-[#110195]/10">
               <div className="flex items-center justify-center gap-1 text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider">
                 <LogOut className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-400 shrink-0" />
-                <span>Départ</span>
+                <span>Clock Out</span>
               </div>
               <span className="block text-base sm:text-xl font-bold text-gray-900 mt-1 font-mono">
                 {todayPointage?.clock_out_time || todayPointage?.heure_depart
@@ -661,7 +656,7 @@ export function Dashboard() {
             <div className="bg-[#FC9905]/10 p-2.5 sm:p-3 rounded-xl border border-[#FC9905]/20">
               <div className="flex items-center justify-center gap-1 text-[10px] sm:text-xs text-[#FC9905] font-semibold uppercase tracking-wider">
                 <Timer className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#FC9905] shrink-0" />
-                <span>Durée</span>
+                <span>Duration</span>
               </div>
               <span className="block text-base sm:text-xl font-bold text-gray-900 mt-1 font-mono truncate">
                 {displayDuration()}
