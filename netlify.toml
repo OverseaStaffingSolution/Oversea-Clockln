@@ -4,6 +4,9 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Ignorer le scan des secrets pour les variables VITE_ (exposées dans le bundle)
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_URL"
+  SECRETS_SCAN_OMIT_PATHS = "dist/assets/*.js,dist/assets/*.css"
 
 # SPA Fallback routing
 [[redirects]]
