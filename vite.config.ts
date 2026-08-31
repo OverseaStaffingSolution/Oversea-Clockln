@@ -80,10 +80,10 @@ export default defineConfig(() => {
                 },
               },
             },
-            // 3. Supabase REST API Queries (Network First - données toujours à jour)
+            // 3. Supabase REST API Queries (Stale-While-Revalidate - 5 minutes)
             {
               urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
-              handler: 'NetworkFirst',
+              handler: 'StaleWhileRevalidate',
               options: {
                 cacheName: 'supabase-api-cache',
                 expiration: {
@@ -93,10 +93,9 @@ export default defineConfig(() => {
                 cacheableResponse: {
                   statuses: [0, 200],
                 },
-                networkTimeoutSeconds: 3, // fallback cache après 3s
               },
             },
-            // 4. Supabase Auth & RPC Mutative Functions (Network Only)
+            // 4. Supabase Auth & RPC Mutative Functions (Network Only to guarantee real-time clock verification)
             {
               urlPattern: /^https:\/\/.*\.supabase\.co\/(?:auth|rpc)\/.*/i,
               handler: 'NetworkOnly',
@@ -138,8 +137,12 @@ export default defineConfig(() => {
       },
     },
     server: {
+      // HMR is disabled in AI Studio via DISABLE_HMR env var.
+      // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
+      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
   };
 });
+

@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-// Statuts possibles du GPS
 export const GPS_STATUS = {
   INACTIVE: 'inactive',
   SEARCHING: 'searching',
@@ -23,8 +22,8 @@ export interface UseGeolocationOptions {
   enableHighAccuracy?: boolean;
   timeout?: number;
   maximumAge?: number;
-  minAccuracy?: number; // Précision minimale cible en mètres (défaut: 100m)
-  autoStopAfter?: number; // S'arrête automatiquement après X ms (défaut: 10000ms)
+  minAccuracy?: number;
+  autoStopAfter?: number;
 }
 
 export function useGeolocation(options: UseGeolocationOptions = {}) {
@@ -32,7 +31,7 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
     enableHighAccuracy = true,
     timeout = 20000,
     maximumAge = 15000,
-    minAccuracy = 100, // Précision cible
+    minAccuracy = 100,
     autoStopAfter = 10000
   } = options;
 
@@ -46,7 +45,6 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
   const stopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isAcquiringRef = useRef<boolean>(false);
 
-  // Nettoyer les ressources
   const cleanup = useCallback(() => {
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
@@ -60,7 +58,6 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
     setIsActive(false);
   }, []);
 
-  // Arrêter le GPS
   const stopGPS = useCallback(() => {
     cleanup();
     setStatus(GPS_STATUS.INACTIVE);
@@ -68,16 +65,12 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
     setError(null);
   }, [cleanup]);
 
-  // Nettoyage au démontage du composant
   useEffect(() => {
     return () => {
       cleanup();
     };
   }, [cleanup]);
 
-  /**
-   * Helper pour obtenir la position avec promesse et options personnalisées
-   */
   const getSinglePosition = useCallback(
     (opts: PositionOptions): Promise<GeolocationPosition> => {
       return new Promise((resolve, reject) => {
@@ -91,9 +84,6 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
     []
   );
 
-  /**
-   * Démarrer l'acquisition GPS avec stratégie progressive (Haute précision -> Fallback standard)
-   */
   const startGPS = useCallback(async (): Promise<GPSPosition> => {
     cleanup();
 
@@ -113,7 +103,7 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
     try {
       let geoPos: GeolocationPosition | null = null;
 
-      // 1. Première tentative : Haute précision avec timeout de 7 secondes
+      // Tentative 1 : Haute précision
       if (enableHighAccuracy) {
         try {
           geoPos = await getSinglePosition({
@@ -122,15 +112,14 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
             maximumAge: maximumAge || 10000
           });
         } catch (highAccErr: any) {
-          console.warn('GPS haute précision non disponible immédiatement, basculement en mode standard...', highAccErr);
-          // Si permission refusée explicitement, ne pas réessayer en standard
-          if (highAccErr.code === 1 /* PERMISSION_DENIED */) {
-            throw highAccErr;
+          console.warn('High accuracy failed:', highAccErr);
+          if (highAccErr.code === 1) {
+            throw highAccErr; // Permission refusée
           }
         }
       }
 
-      // 2. Deuxième tentative : Si haute précision a échoué ou a dépassé le délai, essayer le mode standard (Wi-Fi/Réseau)
+      // Tentative 2 : Standard (Wi-Fi/Réseau)
       if (!geoPos) {
         try {
           geoPos = await getSinglePosition({
@@ -139,14 +128,14 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
             maximumAge: 30000
           });
         } catch (stdErr: any) {
-          console.warn('Tentative standard échouée, essai avec watchPosition...', stdErr);
-          if (stdErr.code === 1 /* PERMISSION_DENIED */) {
+          console.warn('Standard failed:', stdErr);
+          if (stdErr.code === 1) {
             throw stdErr;
           }
         }
       }
 
-      // 3. Troisième tentative : Si toujours rien, essayer watchPosition pour capturer le premier signal entrant
+      // Tentative 3 : watchPosition
       if (!geoPos) {
         geoPos = await new Promise<GeolocationPosition>((resolve, reject) => {
           const timeoutId = setTimeout(() => {
@@ -154,7 +143,7 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
               navigator.geolocation.clearWatch(watchIdRef.current);
               watchIdRef.current = null;
             }
-            reject({ code: 3, message: 'Délai GPS dépassé' });
+            reject({ code: 3, message: 'GPS timeout' });
           }, 8000);
 
           watchIdRef.current = navigator.geolocation.watchPosition(
@@ -179,7 +168,6 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
         });
       }
 
-      // Position obtenue avec succès !
       const { latitude, longitude, accuracy: posAccuracy } = geoPos.coords;
       const validPos: GPSPosition = {
         latitude,
@@ -192,7 +180,6 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
       setStatus(GPS_STATUS.ACTIVE);
       setError(null);
 
-      // Programmer l'arrêt automatique après autoStopAfter (ex: 10s)
       if (stopTimeoutRef.current) {
         clearTimeout(stopTimeoutRef.current);
       }
@@ -202,17 +189,24 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
 
       return validPos;
     } catch (err: any) {
-      let errorMessage = 'Unable to acquire GPS position.';
+      let errorMessage = 'Impossible d\'obtenir la position GPS.';
 
-      if (err.code === 1 /* PERMISSION_DENIED */) {
+      if (err.code === 1) {
         setStatus(GPS_STATUS.PERMISSION_DENIED);
-        errorMessage = 'Please allow location access in your browser.';
-      } else if (err.code === 2 /* POSITION_UNAVAILABLE */) {
+        errorMessage =
+          '📍 Permission GPS refusée.\n\n' +
+          'Pour autoriser la géolocalisation :\n' +
+          '• Chrome / Edge : cliquez sur le cadenas 🔒 dans la barre d\'adresse → ' +
+          'Paramètres du site → Autoriser la géolocalisation → Recharger la page.\n\n' +
+          '• Safari (iPhone) : Réglages → Vie privée → Services de localisation → Safari → Autoriser.\n\n' +
+          '• Android : Réglages → Applications → [Votre navigateur] → Autorisations → Localisation → Autoriser.\n\n' +
+          'Après avoir modifié la permission, rechargez la page et réessayez.';
+      } else if (err.code === 2) {
         setStatus(GPS_STATUS.ERROR);
-        errorMessage = 'Location unavailable. Please enable GPS or Wi-Fi.';
-      } else if (err.code === 3 /* TIMEOUT */) {
+        errorMessage = 'Position indisponible. Activez le GPS ou le Wi-Fi.';
+      } else if (err.code === 3) {
         setStatus(GPS_STATUS.TIMEOUT);
-        errorMessage = 'GPS signal timed out. Please move near a window or check location settings.';
+        errorMessage = 'Délai GPS dépassé. Réessayez.';
       } else {
         setStatus(GPS_STATUS.ERROR);
         errorMessage = err.message || errorMessage;
@@ -224,33 +218,29 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
     }
   }, [enableHighAccuracy, maximumAge, autoStopAfter, cleanup, stopGPS, getSinglePosition]);
 
-  // Récupérer une position unique
   const getCurrentPosition = useCallback(async (): Promise<GPSPosition> => {
     return startGPS();
   }, [startGPS]);
 
   const statusMessage = {
-    [GPS_STATUS.INACTIVE]: 'GPS inactive - Click Clock In or Clock Out',
-    [GPS_STATUS.SEARCHING]: 'Acquiring GPS signal...',
-    [GPS_STATUS.ACTIVE]: `GPS connected - Accuracy: ${Math.round(accuracy || 0)}m`,
-    [GPS_STATUS.ERROR]: 'GPS error - Please enable location services',
-    [GPS_STATUS.PERMISSION_DENIED]: 'Location permission denied',
-    [GPS_STATUS.TIMEOUT]: 'GPS timeout - Please try again',
-    [GPS_STATUS.INSUFFICIENT_ACCURACY]: `Low accuracy signal - Accuracy: ${Math.round(accuracy || 0)}m`
+    [GPS_STATUS.INACTIVE]: 'GPS inactif - Cliquez sur Clock In ou Clock Out',
+    [GPS_STATUS.SEARCHING]: 'Recherche du signal GPS...',
+    [GPS_STATUS.ACTIVE]: `GPS OK - Précision: ${Math.round(accuracy || 0)}m`,
+    [GPS_STATUS.ERROR]: 'Erreur GPS - Activez la localisation',
+    [GPS_STATUS.PERMISSION_DENIED]: '📍 Permission GPS refusée - Cliquez sur le cadenas 🔒 pour autoriser',
+    [GPS_STATUS.TIMEOUT]: 'Délai GPS dépassé - Réessayez',
+    [GPS_STATUS.INSUFFICIENT_ACCURACY]: `Signal faible - Précision: ${Math.round(accuracy || 0)}m`
   }[status];
 
   return {
-    // États
     position,
     status,
     error,
     accuracy,
     isActive,
-    // Actions
     startGPS,
     stopGPS,
     getCurrentPosition,
-    // Status helpers
     isSearching: status === GPS_STATUS.SEARCHING,
     isActiveState: status === GPS_STATUS.ACTIVE,
     isError:
@@ -259,7 +249,6 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
       status === GPS_STATUS.TIMEOUT,
     isInactive: status === GPS_STATUS.INACTIVE,
     isInsufficientAccuracy: status === GPS_STATUS.INSUFFICIENT_ACCURACY,
-    // Message pour affichage
     statusMessage
   };
 }

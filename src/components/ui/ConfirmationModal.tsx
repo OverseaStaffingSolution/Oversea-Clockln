@@ -62,15 +62,35 @@ export function ConfirmationModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isLoading, onClose]);
 
-  // Verrouiller le défilement de la page en arrière-plan
+  // Verrouiller le défilement de la page en arrière-plan (version robuste mobile)
   useEffect(() => {
     if (isOpen) {
+      // Empêcher le scroll sur le body
       document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = `-${window.scrollY}px`;
+      // Sauvegarder la position de scroll pour la restaurer
+      const scrollY = window.scrollY;
+      document.body.dataset.scrollY = String(scrollY);
     } else {
-      document.body.style.overflow = 'unset';
+      // Restaurer le scroll
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      const scrollY = parseInt(document.body.dataset.scrollY || '0', 10);
+      document.body.style.top = '';
+      window.scrollTo(0, scrollY);
+      delete document.body.dataset.scrollY;
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      const scrollY = parseInt(document.body.dataset.scrollY || '0', 10);
+      document.body.style.top = '';
+      window.scrollTo(0, scrollY);
+      delete document.body.dataset.scrollY;
     };
   }, [isOpen]);
 
@@ -86,14 +106,14 @@ export function ConfirmationModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-fadeIn overscroll-contain touch-none"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isLoading) onClose();
       }}
     >
       <div
         ref={modalRef}
-        className="w-full max-w-lg rounded-3xl bg-white border border-gray-200 shadow-2xl p-6 sm:p-8 animate-scaleUp relative overflow-hidden"
+        className="w-full max-w-lg rounded-3xl bg-white border border-gray-200 shadow-2xl p-6 sm:p-8 animate-scaleUp relative overflow-y-auto max-h-[90vh]"
       >
         {/* En-tête de la modale */}
         <div className="flex items-start justify-between mb-6 relative z-10">

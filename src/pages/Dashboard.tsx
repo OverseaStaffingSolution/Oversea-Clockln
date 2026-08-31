@@ -21,6 +21,8 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { GPSStatus } from '../components/ui/GPSStatus';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import { InstallButton } from '../components/ui/InstallButton';
+import { ClockLoader } from '../components/ui/ClockLoader';
+import { ConnectionStatus } from '../components/ui/ConnectionStatus'; // ✅ Import ajouté
 import { useGeolocation, GPSPosition, GPS_STATUS } from '../hooks/useGeolocation';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useAgentSchedule } from '../hooks/useAgentSchedule';
@@ -41,6 +43,52 @@ import {
 import { formatTime, formatDuration } from '../utils/dateHelpers';
 import { MESSAGES } from '../utils/messages';
 import { cacheService } from '../services/cacheService';
+
+// Helper pour transformer les erreurs techniques en messages compréhensibles
+const getUserFriendlyErrorMessage = (err: any): string => {
+  // Si c'est déjà un message utilisateur, on le retourne tel quel
+  if (err && err.isUserMessage) return err.message;
+
+  const message = err?.message || String(err) || '';
+
+  // Erreurs réseau
+  if (message === 'Failed to fetch' || message === 'Network Error' || message.includes('network')) {
+    return 'Connection lost. Please check your internet connection and try again.';
+  }
+
+  // Timeout
+  if (message.includes('timeout') || message.includes('Timeout') || message.includes('timed out')) {
+    return 'The request timed out. Please try again.';
+  }
+
+  // Erreurs GPS
+  if (message.includes('GPS') || message.includes('geolocation') || message.includes('Geolocation')) {
+    return 'GPS unavailable. Please enable location services and try again.';
+  }
+
+  // Erreurs Supabase
+  if (message.includes('Supabase') || message.includes('RPC') || message.includes('rpc')) {
+    return 'Server error. Please try again in a few moments.';
+  }
+
+  // Erreurs d'authentification
+  if (message.includes('auth') || message.includes('Auth') || message.includes('JWT') || message.includes('token')) {
+    return 'Session expired. Please log in again.';
+  }
+
+  // Erreurs de validation
+  if (message.includes('validation') || message.includes('Validation') || message.includes('invalid')) {
+    return 'Invalid input. Please check your data and try again.';
+  }
+
+  // Si le message est déjà compréhensible, on le garde
+  if (message && message.length < 200 && !message.includes('{') && !message.includes('[')) {
+    return message;
+  }
+
+  // Fallback
+  return 'Something went wrong. Please try again.';
+};
 
 export function Dashboard() {
   const { user, agent } = useAuth();
@@ -157,7 +205,7 @@ export function Dashboard() {
       console.error('Refresh error:', err);
       setFeedback({
         type: 'error',
-        message: MESSAGES.ERROR.NETWORK
+        message: getUserFriendlyErrorMessage(err)
       });
     }
   }, [effectiveAgentId, updateButtonStates]);
@@ -175,7 +223,7 @@ export function Dashboard() {
       console.error('Initial load error:', err);
       setFeedback({
         type: 'error',
-        message: MESSAGES.ERROR.NETWORK
+        message: getUserFriendlyErrorMessage(err)
       });
     } finally {
       setInitialLoading(false);
@@ -196,7 +244,8 @@ export function Dashboard() {
       clearTimeout(timeoutId);
       const data = await response.json();
       return data.ip || null;
-    } catch {
+    } catch (err) {
+      console.warn('IP fetch failed:', err);
       return null;
     }
   };
@@ -228,7 +277,7 @@ export function Dashboard() {
       const positionData = await startGPS();
 
       if (!positionData) {
-        throw new Error(MESSAGES.GPS.UNAVAILABLE);
+        throw new Error('GPS unavailable');
       }
 
       const dist = getDistanceToCallCenter(
@@ -253,7 +302,7 @@ export function Dashboard() {
       console.error('GPS error handleClockIn:', err);
       setFeedback({
         type: 'error',
-        message: err.message || MESSAGES.ERROR.NETWORK
+        message: getUserFriendlyErrorMessage(err)
       });
     } finally {
       setLoading(false);
@@ -288,7 +337,7 @@ export function Dashboard() {
       const positionData = await startGPS();
 
       if (!positionData) {
-        throw new Error(MESSAGES.GPS.UNAVAILABLE);
+        throw new Error('GPS unavailable');
       }
 
       const dist = getDistanceToCallCenter(
@@ -313,7 +362,7 @@ export function Dashboard() {
       console.error('GPS error handleClockOut:', err);
       setFeedback({
         type: 'error',
-        message: err.message || MESSAGES.ERROR.NETWORK
+        message: getUserFriendlyErrorMessage(err)
       });
     } finally {
       setLoading(false);
@@ -361,7 +410,7 @@ export function Dashboard() {
       console.error('Confirm error:', err);
       setFeedback({
         type: 'error',
-        message: err.message || MESSAGES.ERROR.NETWORK
+        message: getUserFriendlyErrorMessage(err)
       });
     } finally {
       setIsConfirming(false);
@@ -423,12 +472,7 @@ export function Dashboard() {
   const targetRadius = siteInfo?.rayon_metres || AUTHORIZED_RADIUS_METERS;
 
   if (initialLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <div className="w-12 h-12 border-4 border-[#110195]/20 border-t-[#110195] rounded-full animate-spin"></div>
-        <p className="text-gray-600 font-medium text-sm">Loading your day...</p>
-      </div>
-    );
+    return <ClockLoader subtitle="Loading your day..." size="medium" />;
   }
 
   return (
@@ -464,6 +508,10 @@ export function Dashboard() {
           </div>
           <div className="text-xs sm:text-sm text-gray-600 capitalize mt-1">
             {formattedClockDate}
+          </div>
+          {/* ✅ Indicateur de connexion ajouté ici */}
+          <div className="mt-2 flex justify-center md:justify-end">
+            <ConnectionStatus />
           </div>
         </GlassCard>
       </div>
@@ -553,7 +601,7 @@ export function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <button
           onClick={handleClockIn}
-          disabled={loading || !canClockIn || status === GPS_STATUS.PERMISSION_DENIED || !isOnline}
+          disabled={loading || !canClockIn || !isOnline}
           className={`w-full py-6 px-8 rounded-2xl font-bold text-xl transition-all duration-300 shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-3 ${
             !isOnline
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300/40'
@@ -589,7 +637,7 @@ export function Dashboard() {
 
         <button
           onClick={handleClockOut}
-          disabled={loading || !canClockOut || status === GPS_STATUS.PERMISSION_DENIED || !isOnline}
+          disabled={loading || !canClockOut || !isOnline}
           className={`w-full py-6 px-8 rounded-2xl font-bold text-xl transition-all duration-300 shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-3 ${
             !isOnline
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300/40'

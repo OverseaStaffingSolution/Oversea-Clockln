@@ -4,13 +4,62 @@ interface ClockLoaderProps {
   title?: string;
   subtitle?: string;
   fullScreen?: boolean;
+  size?: 'small' | 'medium' | 'large';
 }
 
 export function ClockLoader({
   title = 'Oversea ClockIn',
   subtitle = 'Chargement...',
-  fullScreen = true
+  fullScreen = true,
+  size = 'medium'
 }: ClockLoaderProps) {
+  const sizeMap = {
+    small: 'w-10 h-10',   // 40px
+    medium: 'w-32 h-32',  // 128px
+    large: 'w-40 h-40'    // 160px
+  };
+
+  const titleSizeMap = {
+    small: 'hidden',      // pas de titre en small
+    medium: 'text-xl sm:text-2xl',
+    large: 'text-2xl sm:text-3xl'
+  };
+
+  const subtitleSizeMap = {
+    small: 'text-[10px]',
+    medium: 'text-xs sm:text-sm',
+    large: 'text-xs sm:text-sm'
+  };
+
+  const dotSizeMap = {
+    small: 'w-1.5 h-1.5',
+    medium: 'w-2 h-2',
+    large: 'w-2.5 h-2.5'
+  };
+
+  // Épaisseurs de traits adaptées à la taille
+  const strokeWidths = {
+    small: { outer: 8, inner: 1, hour: 6, minute: 4, second: 2.5 },
+    medium: { outer: 5, inner: 1, hour: 4, minute: 2.5, second: 1.5 },
+    large: { outer: 5, inner: 1, hour: 4, minute: 2.5, second: 1.5 }
+  };
+
+  const repèreSizes = {
+    small: { major: 4, minor: 2 },
+    medium: { major: 3, minor: 1.5 },
+    large: { major: 3, minor: 1.5 }
+  };
+
+  const centerSizes = {
+    small: { outer: 7, inner: 3.5 },
+    medium: { outer: 5, inner: 2.5 },
+    large: { outer: 5, inner: 2.5 }
+  };
+
+  const stroke = strokeWidths[size];
+  const repère = repèreSizes[size];
+  const center = centerSizes[size];
+
   return (
     <div
       className={`
@@ -20,7 +69,7 @@ export function ClockLoader({
       `}
     >
       {/* Horloge SVG Minimaliste */}
-      <div className="relative w-32 h-32 sm:w-40 sm:h-40">
+      <div className={`relative ${sizeMap[size]}`}>
         <svg viewBox="0 0 200 200" className="w-full h-full">
           {/* Cercle extérieur - Bleu #110195 */}
           <circle
@@ -29,7 +78,7 @@ export function ClockLoader({
             r="90"
             fill="none"
             stroke="#110195"
-            strokeWidth="5"
+            strokeWidth={stroke.outer}
           />
 
           {/* Cercle intérieur (cadran) */}
@@ -39,7 +88,7 @@ export function ClockLoader({
             r="82"
             fill="none"
             stroke="#E5E7EB"
-            strokeWidth="1"
+            strokeWidth={stroke.inner}
           />
 
           {/* Repères des 12 heures (simples points) */}
@@ -54,7 +103,7 @@ export function ClockLoader({
                 key={i}
                 cx={x}
                 cy={y}
-                r={isMajor ? 3 : 1.5}
+                r={isMajor ? repère.major : repère.minor}
                 fill={isMajor ? '#FC9905' : '#D1D5DB'}
               />
             );
@@ -68,7 +117,7 @@ export function ClockLoader({
               x2="100"
               y2="60"
               stroke="#FC9905"
-              strokeWidth="4"
+              strokeWidth={stroke.hour}
               strokeLinecap="round"
             />
           </g>
@@ -81,7 +130,7 @@ export function ClockLoader({
               x2="100"
               y2="45"
               stroke="#FC9905"
-              strokeWidth="2.5"
+              strokeWidth={stroke.minute}
               strokeLinecap="round"
             />
           </g>
@@ -94,7 +143,7 @@ export function ClockLoader({
               x2="100"
               y2="35"
               stroke="#FC9905"
-              strokeWidth="1.5"
+              strokeWidth={stroke.second}
               strokeLinecap="round"
               opacity="0.7"
             />
@@ -104,33 +153,33 @@ export function ClockLoader({
           <circle
             cx="100"
             cy="100"
-            r="5"
+            r={center.outer}
             fill="#FC9905"
           />
           <circle
             cx="100"
             cy="100"
-            r="2.5"
+            r={center.inner}
             fill="#110195"
           />
         </svg>
       </div>
 
-      {/* Titre */}
-      <h1 className="mt-6 text-xl sm:text-2xl font-serif font-bold text-[#110195] tracking-tight">
+      {/* Titre - caché en small */}
+      <h1 className={`mt-6 font-serif font-bold text-[#110195] tracking-tight ${titleSizeMap[size]}`}>
         {title}
       </h1>
 
       {/* Sous-titre */}
-      <p className="mt-1 text-xs sm:text-sm text-gray-400 font-light tracking-wide">
+      <p className={`mt-1 text-gray-400 font-light tracking-wide ${subtitleSizeMap[size]}`}>
         {subtitle}
       </p>
 
       {/* Points de chargement */}
       <div className="flex items-center justify-center gap-1.5 mt-4">
-        <span className="w-2 h-2 rounded-full bg-[#FC9905] animate-bounce [animation-delay:-0.3s]" />
-        <span className="w-2 h-2 rounded-full bg-[#110195] animate-bounce [animation-delay:-0.15s]" />
-        <span className="w-2 h-2 rounded-full bg-[#FC9905] animate-bounce" />
+        <span className={`${dotSizeMap[size]} rounded-full bg-[#FC9905] animate-bounce [animation-delay:-0.3s]`} />
+        <span className={`${dotSizeMap[size]} rounded-full bg-[#110195] animate-bounce [animation-delay:-0.15s]`} />
+        <span className={`${dotSizeMap[size]} rounded-full bg-[#FC9905] animate-bounce`} />
       </div>
     </div>
   );

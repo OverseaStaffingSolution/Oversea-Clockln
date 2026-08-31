@@ -13,7 +13,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Logo } from '../ui/Logo';
 import { Button } from '../ui/Button';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
-import { ConnectionIndicator } from '../ui/ConnectionIndicator';
+// ✅ Suppression de l'import ConnectionIndicator
 import { usePreload } from '../../hooks/usePreload';
 
 export function Layout() {
@@ -93,8 +93,7 @@ export function Layout() {
             </nav>
 
             <div className="flex items-center gap-2.5 sm:gap-3">
-              {/* Discreet Connection Pill */}
-              <ConnectionIndicator />
+              {/* ❌ ConnectionIndicator SUPPRIMÉ */}
 
               {isInstallable && (
                 <button

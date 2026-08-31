@@ -77,28 +77,20 @@
         </svg>
       </div>
 
-      <!-- Titre -->
+      <!-- Titre bicolore : Oversea en bleu, ClockIn en orange -->
       <h1 style="
         margin-top: 20px;
         font-size: 22px;
         font-family: serif;
         font-weight: bold;
-        color: #110195;
         letter-spacing: -0.5px;
         margin-bottom: 0;
-      ">Oversea ClockIn</h1>
+      ">
+        <span style="color: #110195;">Oversea</span>
+        <span style="color: #FC9905;"> ClockIn</span>
+      </h1>
 
-      <!-- Sous-titre -->
-      <p style="
-        margin-top: 4px;
-        font-size: 13px;
-        color: #9CA3AF;
-        font-weight: 300;
-        letter-spacing: 0.5px;
-        margin-bottom: 0;
-      ">Chargement...</p>
-
-      <!-- Points de chargement -->
+      <!-- Points de chargement uniquement (sans le texte "Chargement...") -->
       <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 16px;">
         <span style="width: 8px; height: 8px; border-radius: 50%; background: #FC9905; animation: splashBounce 0.6s infinite alternate; animation-delay: -0.3s;"></span>
         <span style="width: 8px; height: 8px; border-radius: 50%; background: #110195; animation: splashBounce 0.6s infinite alternate; animation-delay: -0.15s;"></span>
@@ -133,4 +125,3 @@
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
