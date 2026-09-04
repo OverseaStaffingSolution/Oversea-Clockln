@@ -471,6 +471,18 @@ export function Dashboard() {
 
   const targetRadius = siteInfo?.rayon_metres || AUTHORIZED_RADIUS_METERS;
 
+  const isWorkingDay = (): boolean => {
+    const days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+    const today = new Date().getDay(); // 0=Dim, 1=Lun, ..., 6=Sam
+    const dayIndex = today === 0 ? 6 : today - 1;
+    const dayName = days[dayIndex];
+    
+    if (!agent?.jours_travailles || agent.jours_travailles.length === 0) {
+      return true; // Par défaut, si pas configuré, on autorise
+    }
+    return agent.jours_travailles.includes(dayName);
+  };
+
   if (initialLoading) {
     return <ClockLoader subtitle="Loading your day..." size="medium" />;
   }
@@ -601,9 +613,11 @@ export function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <button
           onClick={handleClockIn}
-          disabled={loading || !canClockIn || !isOnline}
+          disabled={loading || !canClockIn || !isOnline || !isWorkingDay()}
           className={`w-full py-6 px-8 rounded-2xl font-bold text-xl transition-all duration-300 shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-3 ${
             !isOnline
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300/40'
+              : !isWorkingDay()
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300/40'
               : loading && isPointing === 'arrival'
               ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
@@ -616,6 +630,11 @@ export function Dashboard() {
             <>
               <WifiOff className="w-6 h-6 text-gray-400" />
               <span>Offline</span>
+            </>
+          ) : !isWorkingDay() ? (
+            <>
+              <Clock className="w-6 h-6 text-gray-400" />
+              <span>Rest Day</span>
             </>
           ) : loading && isPointing === 'arrival' ? (
             <>
@@ -637,9 +656,11 @@ export function Dashboard() {
 
         <button
           onClick={handleClockOut}
-          disabled={loading || !canClockOut || !isOnline}
+          disabled={loading || !canClockOut || !isOnline || !isWorkingDay()}
           className={`w-full py-6 px-8 rounded-2xl font-bold text-xl transition-all duration-300 shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-3 ${
             !isOnline
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300/40'
+              : !isWorkingDay()
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300/40'
               : loading && isPointing === 'departure'
               ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
@@ -652,6 +673,11 @@ export function Dashboard() {
             <>
               <WifiOff className="w-6 h-6 text-gray-400" />
               <span>Offline</span>
+            </>
+          ) : !isWorkingDay() ? (
+            <>
+              <Clock className="w-6 h-6 text-gray-400" />
+              <span>Rest Day</span>
             </>
           ) : loading && isPointing === 'departure' ? (
             <>
@@ -671,6 +697,12 @@ export function Dashboard() {
           )}
         </button>
       </div>
+
+      {!isWorkingDay() && (
+        <div className="text-center text-gray-500 text-sm mt-2">
+          Aujourd'hui est un jour de repos
+        </div>
+      )}
 
       <div className="pt-4">
         <GlassCard className="!p-5 sm:!p-6 border border-[#110195]/10">
