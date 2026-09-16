@@ -23,24 +23,27 @@ export interface Agent {
   [key: string]: any;
 }
 
-export async function getCurrentAgent(): Promise<Agent | null> {
+export async function getCurrentAgent(forceRefresh: boolean = false): Promise<Agent | null> {
   const cacheKey = 'current_agent_profile';
-  const cached = cacheService.get<Agent>(cacheKey);
-  if (cached) {
-    // Return cached immediately, trigger background refresh if online
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        supabase
-          .from('agents')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-          .then(({ data }) => {
-            if (data) cacheService.set(cacheKey, data, 60, true);
-          });
-      }
-    }).catch(() => {});
-    return cached;
+  
+  if (!forceRefresh) {
+    const cached = cacheService.get<Agent>(cacheKey);
+    if (cached) {
+      // Return cached immediately, trigger background refresh if online
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) {
+          supabase
+            .from('agents')
+            .select('*')
+            .eq('id', user.id)
+            .single()
+            .then(({ data }) => {
+              if (data) cacheService.set(cacheKey, data, 60, true);
+            });
+        }
+      }).catch(() => {});
+      return cached;
+    }
   }
 
   const { data: { user } } = await supabase.auth.getUser()

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react'
 import { supabase, getCurrentAgent, Agent } from '../services/supabase'
 import { User } from '@supabase/supabase-js'
+import { cacheService } from '../services/cacheService'
 
 interface AuthContextType {
   user: User | null;
@@ -32,8 +33,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession()
       
       if (session?.user) {
+        // Use forceRefresh=true to ensure we have the latest actif status
+        const agentData = await getCurrentAgent(true)
+        
+        // Block access if agent is not active
+        if (agentData && agentData.actif === false) {
+          await supabase.auth.signOut()
+          cacheService.remove('current_agent_profile')
+          setUser(null)
+          setAgent(null)
+          return
+        }
+
         setUser(session.user)
-        const agentData = await getCurrentAgent()
         setAgent(agentData)
       } else {
         setUser(null)
@@ -59,8 +71,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error
 
+      // Force refresh on sign in
+      const agentData = await getCurrentAgent(true)
+
+      // Block access if agent is not active
+      if (agentData && agentData.actif === false) {
+        await supabase.auth.signOut()
+        cacheService.remove('current_agent_profile')
+        throw new Error("VOUS AVEZ ETE DESACTIVER PAR LADMIN")
+      }
+
       setUser(data.user)
-      const agentData = await getCurrentAgent()
       setAgent(agentData)
       
       return { success: true, user: data.user, agent: agentData! }
@@ -79,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signOut()
       if (error) throw error
       
+      cacheService.remove('current_agent_profile')
       setUser(null)
       setAgent(null)
       return { success: true }
