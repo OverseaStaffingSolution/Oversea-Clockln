@@ -10,6 +10,7 @@ interface AuthContextType {
   error: string | null;
   signIn: (email: string, password: string) => Promise<{ success: boolean; user?: User; agent?: Agent; error?: string }>;
   signOut: () => Promise<{ success: boolean; error?: string }>;
+  updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
   checkSession: () => Promise<void>;
   isAuthenticated: boolean;
   isManager: boolean;
@@ -113,6 +114,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function updatePassword(newPassword: string) {
+    try {
+      setLoading(true)
+      setError(null)
+
+      if (!user) {
+        throw new Error('Utilisateur non connecté.')
+      }
+
+      // 1. Mettre à jour dans Supabase Auth
+      const { error: authError } = await supabase.auth.updateUser({
+        password: newPassword
+      })
+      if (authError) throw authError
+
+      // 2. Mettre à jour dans la colonne password de la table agents
+      const targetAgentId = agent?.id || user.id
+      const { error: dbError } = await supabase
+        .from('agents')
+        .update({ password: newPassword })
+        .eq('id', targetAgentId)
+
+      if (dbError) throw dbError
+
+      // 3. Mettre à jour l'agent dans l'état local et dans le cache
+      const updatedAgent = agent ? { ...agent, password: newPassword } : null
+      if (updatedAgent) {
+        setAgent(updatedAgent)
+        cacheService.set('current_agent_profile', updatedAgent, 60, true)
+      }
+
+      return { success: true }
+    } catch (err: any) {
+      console.error('Password update error:', err)
+      const errorMsg = err?.message || 'Erreur lors de la mise à jour du mot de passe.'
+      setError(errorMsg)
+      return { success: false, error: errorMsg }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const value = {
     user,
     agent,
@@ -120,6 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     error,
     signIn,
     signOut,
+    updatePassword,
     checkSession,
     isAuthenticated: !!user,
     isManager: agent?.role === 'manager'

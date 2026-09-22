@@ -20,6 +20,7 @@ export interface Agent {
   prenom: string;
   role: string;
   actif: boolean;
+  password?: string | null;
   [key: string]: any;
 }
 

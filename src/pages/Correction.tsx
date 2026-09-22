@@ -72,6 +72,33 @@ export function Correction() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
+  const [hasPointage, setHasPointage] = useState<boolean | null>(null);
+  const [checkingPointage, setCheckingPointage] = useState(false);
+
+  const checkPointageExists = useCallback(async (date: string) => {
+    if (!effectiveAgentId || !date) return;
+    setCheckingPointage(true);
+    try {
+      const { data, error } = await supabase
+        .from('pointages')
+        .select('id')
+        .eq('agent_id', effectiveAgentId)
+        .eq('date', date)
+        .maybeSingle();
+      setHasPointage(!!data);
+    } catch (err) {
+      setHasPointage(false);
+    } finally {
+      setCheckingPointage(false);
+    }
+  }, [effectiveAgentId]);
+
+  useEffect(() => {
+    if (form.date) {
+      checkPointageExists(form.date);
+    }
+  }, [form.date, checkPointageExists]);
+
   /**
    * Afficher un message toast avec auto-fermeture
    */
@@ -551,12 +578,17 @@ export function Correction() {
 
               {/* Bouton d'envoi */}
               <div className="pt-3">
+                {hasPointage === false && (
+                  <div className="text-red-500 text-sm text-center mb-4 bg-red-50 p-3 rounded-xl border border-red-200">
+                    ⚠️ Aucun pointage trouvé pour cette date. Vous ne pouvez pas demander de correction sans pointage initial.
+                  </div>
+                )}
                 <Button
                   type="submit"
                   variant="secondary"
                   fullWidth
-                  loading={submitting}
-                  disabled={submitting || !isOnline}
+                  loading={submitting || checkingPointage}
+                  disabled={submitting || checkingPointage || !hasPointage || !isOnline}
                   className="!py-3.5 text-sm font-bold shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {!isOnline ? (
@@ -564,15 +596,20 @@ export function Correction() {
                       <WifiOff className="w-4 h-4" />
                       <span>OFFLINE - SUBMISSION DISABLED</span>
                     </>
-                  ) : submitting ? (
+                  ) : submitting || checkingPointage ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Submitting...</span>
+                      <span>{checkingPointage ? 'Checking...' : 'Submitting...'}</span>
+                    </>
+                  ) : !hasPointage ? (
+                    <>
+                      <XCircle className="w-4 h-4" />
+                      <span>NO RECORD FOUND</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      <span>SUBMIT REQUEST</span>
+                      <span>SUBMIT CORRECTION</span>
                     </>
                   )}
                 </Button>

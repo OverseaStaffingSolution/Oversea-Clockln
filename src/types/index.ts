@@ -10,6 +10,7 @@ export interface Agent {
   prenom: string;
   role: 'agent' | 'manager' | 'admin' | string;
   actif: boolean;
+  password?: string | null;
   telephone?: string | null;
   matricule?: string | null;
   site_id?: string | number | null;

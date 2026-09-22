@@ -7,7 +7,8 @@ import {
   Menu,
   X,
   LogOut,
-  Download
+  Download,
+  KeyRound
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Logo } from '../ui/Logo';
@@ -15,12 +16,14 @@ import { Button } from '../ui/Button';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
 // ✅ Suppression de l'import ConnectionIndicator
 import { usePreload } from '../../hooks/usePreload';
+import { ChangePasswordModal } from '../ui/ChangePasswordModal';
 
 export function Layout() {
   const { user, agent, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const { isInstallable, installApp } = usePWAInstall();
   const { preloadRoute } = usePreload();
 
@@ -105,6 +108,14 @@ export function Layout() {
                   <span>Install App</span>
                 </button>
               )}
+              <button
+                onClick={() => setShowPasswordModal(true)}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#110195]/5 hover:bg-[#110195]/15 text-[#110195] text-xs font-semibold border border-[#110195]/15 transition-all shadow-xs"
+                title="Changer mon mot de passe"
+              >
+                <KeyRound className="w-3.5 h-3.5 text-[#FC9905]" />
+                <span>Mot de passe</span>
+              </button>
               <div className="hidden sm:flex items-center gap-3 px-3.5 py-1.5 bg-[#110195]/5 border border-[#110195]/10 rounded-xl">
                 <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#110195] to-[#FC9905] flex items-center justify-center text-xs font-bold text-white shadow-md">
                   {initial}
@@ -200,6 +211,17 @@ export function Layout() {
           )}
 
           <button
+            onClick={() => {
+              setShowPasswordModal(true);
+              setMobileMenuOpen(false);
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-[#110195]/5 hover:text-[#110195] border border-transparent hover:border-[#110195]/15 transition-colors"
+          >
+            <KeyRound className="w-5 h-5 shrink-0 text-[#FC9905]" />
+            <span className="truncate">Changer mot de passe</span>
+          </button>
+
+          <button
             onClick={handleSignOut}
             className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors mt-4"
           >
@@ -220,6 +242,12 @@ export function Layout() {
           © {new Date().getFullYear()} Oversea. Secure Time Tracking Service.
         </p>
       </footer>
+
+      {/* Modale de changement de mot de passe */}
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+      />
     </div>
   );
 }
